@@ -1,0 +1,151 @@
+<div>Teachable Machine Image Model - p5.js and ml5.js</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/p5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.9.0/addons/p5.dom.min.js"></script>
+<script src="https://unpkg.com/ml5@latest/dist/ml5.min.js"></script>
+<script src="./lib/p5.sound.js"></script>
+<script type="text/javascript">
+  // Classifier Variable
+  let classifier;
+  // Model URL
+  let imageModelURL = './my_model/';
+
+  // Video
+  let video;
+  let flippedVideo;
+  // To store the classification
+  let label = "";
+  var state = new Boolean(true);
+  var radius = 1;
+  var R;
+  var acceleration;
+  var count;
+  let bg;
+  let sounds;
+  let waitTime;
+  // Load the model first
+  function preload() {
+    classifier = ml5.imageClassifier(imageModelURL + 'model.json');
+    //スポンジから水が出る音を読み込む
+    sounds = loadSound('./basya2.mp3');
+    count = 0;
+    acceleration = 0;
+    waitTime = 0;
+  }
+
+  function setup() {
+    createCanvas(300, 300);
+    // Create the video
+    video = createCapture(VIDEO);
+    video.size(320, 240);
+    video.hide();
+
+    flippedVideo = ml5.flipImage(video);
+    // Start classifying
+    classifyVideo();
+    bg = loadImage('./tile.jpg');
+    R = 50;
+  }
+
+  function draw() {
+    console.log(R);
+    background(bg);
+    image(flippedVideo, 0, 0);
+    noStroke();
+    // circle(width / 2, height / 2, 600 - (R - 50) * 12);
+    // fill(255 * (1 - R / 200), 255 * ( 1 - R / 200), 0);
+    if(waitTime > 0){
+      waitTime --;
+    }
+    if(state == false){
+      noStroke();
+      // if(label >= 0.98){
+        //   state = true;
+        //   sounds.play();
+        // }
+        if(label > 0.8 && acceleration < 10 && waitTime == 0){
+          // acceleration = 15;
+          sounds.play();
+          waitTime = 60
+        }
+        acceleration += count;
+        // R = 100 - label * 50;
+        // circle(width / 2, height / 2, 100 - label * 50);
+      }
+      else{
+        acceleration = -1.5;
+        count = 0;
+        // R = 100 - radius * 50;
+        // circle(width / 2, height / 2, 100 - radius * 50);
+        // if(label <= 0.3){
+          //   radius -= 0.01;
+          //   if(radius <= 0){
+            //     radius = 1;
+            //     state = false;
+            //   }
+            // }
+          }
+          if(label <= 0.3){
+            state = true;
+          }
+          else{
+            state = false;
+          }
+          if (R < 10) {
+            R = 10;
+          }
+          
+          R += acceleration;
+          if (R > 400) {
+            R = 400;
+          }
+          fill(169, 206, 236, 100);
+          circle(width / 2, height / 2, R/2 + 150);
+          fill(155+R/4,155+R/4,0,250);
+          circle(width/2, height/2, 150 - R/5);
+          count += label/5;
+          textSize(16);
+          textAlign(CENTER);
+          fill(0);
+          text(label, width / 2, height - 4);     
+        }
+        
+  // Get a prediction for the current video frame
+  function classifyVideo() {
+    flippedVideo = ml5.flipImage(video)
+    classifier.classify(flippedVideo, gotResult);
+    flippedVideo.remove();
+
+  }
+
+  // When we get a result
+  function gotResult(error, results) {
+    // If there is an error
+    if (error) {
+      console.error(error);
+      return;
+    }
+    // The results are in an array ordered by confidence.
+    // console.log(results[0]);
+    for (i = 0; i < 2; i++) {
+      if (results[i].label == "go-") {
+        label = results[i].confidence.toFixed(2);
+      }
+    }
+    console.log(label);
+    // label = results[0].label;
+    // Classifiy again!
+    classifyVideo();
+  }
+</script>
+
+<!-- 
+  ・握ることで画面上をバラバラ動いている円のスピードを落とす 
+  ・握るをたくさんつくる
+  ・握った感触の再現
+  ・音を出す（握った時の）
+  ・卵をわる（音問われた時の様子を再現）
+  ・水を含んだスポンジを再現
+  ・絞るに限定
+    ・果物→潰した後になかなか戻らない、液体の垂れ方
+  ・
+-->
